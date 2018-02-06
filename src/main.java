@@ -10,18 +10,26 @@ import com.csvreader.*;
 import java.io.FileWriter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Scanner;
 
 public class main {
     public static double eps = 10e-8;
     public static void main (String [] args){
-        String outputfolder = args[0];
-        int nrun = Integer.parseInt(args[1]);
-        int nstat = Integer.parseInt(args[2]);
-        int nupperruns = Integer.parseInt(args[3]);
-        int nvarsvariation = Integer.parseInt(args[4]);
-        int statsnumber = Integer.parseInt(args[5]);
-        boolean allbinaries =  Boolean.parseBoolean(args[6]);
-        boolean consider_matrix = Boolean.parseBoolean(args[7]);
+        String type = args[0];
+        String inputfile = args[1];
+        String inputname = args[2];
+        String outputfolder = args[3];
+        boolean consider_matrix = Boolean.parseBoolean(args[4]);
+        int nstat = Integer.parseInt(args[5]);
+
+
+
+
+
+
+
+        //boolean allbinaries =  (Boolean) parameters.get(n);
+        //boolean consider_matrix = nonlinear;
 
 
         /*
@@ -33,59 +41,91 @@ public class main {
         */
 
         try {
-            main.upperRuns(nrun, nstat, nupperruns,
-                    nvarsvariation, statsnumber, outputfolder, allbinaries, consider_matrix);
+            main.upperRuns(nstat, inputfile, type,inputname, outputfolder, consider_matrix);
         }catch (IOException e){
             System.out.println("ERROR something is wrong with the Input/Output");
             e.printStackTrace();
         }
 
     }
-    public static void upperRuns(int nrun, int nstat, int nupperruns,
-                                 int nvarsvariation,int statsnumber,
-                                 String outputfolder, boolean allbinaries,
+
+    private static ArrayList<Object> readFromFile( String type, String inputfile)throws FileNotFoundException{
+        if( type.equalsIgnoreCase("2dkp")){
+            return read2DKP(inputfile);
+        }else if (type.equalsIgnoreCase("ap")){
+            return readAP(inputfile);
+        }
+       return readStandardInputFile( inputfile);
+    }
+
+    private static ArrayList<Object> read(String inputfile) throws FileNotFoundException{
+        ArrayList<Object> parameters = new ArrayList<>();
+        Scanner fileIn = new Scanner(new File(inputfile)).useDelimiter("\\s* \\s*");;
+        do {
+            ArrayList<Integer> singleinput = new ArrayList<>();
+            while (fileIn.hasNext()) {
+                singleinput.add( fileIn.nextInt());
+            }
+            parameters.add(singleinput);
+        }while (fileIn.hasNextLine());
+        fileIn.close();
+
+        return parameters;
+    }
+    private static ArrayList<Object> read2DKP(String inputfile) throws FileNotFoundException{
+        ArrayList<Object> parameters = read(inputfile);
+        int n = parameters.size();
+        int binaryvariables = ((ArrayList<Integer>) parameters.get(0)).get(0);
+        int [] b = new int [2];
+        b[0] = ((ArrayList<Integer>) parameters.get(1)).get(0);
+        b[1] = ((ArrayList<Integer>) parameters.get(2)).get(0);
+        ArrayList<Integer> obj1 = (ArrayList<Integer>) parameters.get(3);
+        ArrayList<Integer> obj2 = (ArrayList<Integer>) parameters.get(4);
+        ArrayList<Integer> con1 = (ArrayList<Integer>) parameters.get(5);
+        ArrayList<Integer> con2 = (ArrayList<Integer>) parameters.get(6);
+        int [][] c = new int [2][n];
+        int [][] A = new int [2][n];
+        for(int i = 0; i <n ; i++){
+            c[0][i] = obj1.get(i);
+            c[1][i] = obj2.get(i);
+            A[0][i] = con1.get(i);
+            A[1][i] = con2.get(i);
+        }
+
+        parameters.add(n);
+        parameters.add(c);
+        parameters.add(A);
+        parameters.add(b);
+        parameters.add(-1); // allbinaries
+
+
+        return parameters;
+    }
+
+    private static ArrayList<Object> readAP(String inputfile)throws FileNotFoundException{
+        ArrayList<Object> parameters = new ArrayList<>();
+        return parameters;
+    }
+
+    private static ArrayList<Object> readStandardInputFile(String inputfile)throws FileNotFoundException{
+        ArrayList<Object> parameters = new ArrayList<>();
+        return parameters;
+    }
+
+    public static void upperRuns(int nstat, String type,String inputfile,
+                                 String inputname,
+                                 String outputfolder,
                                  boolean consider_matrix) throws IOException{
-        double[][] stats = new double[statsnumber*nstat][nupperruns*nvarsvariation];
-        String output = outputfolder + File.separator+"Stats.csv";
-        CsvWriter outputWriter = new CsvWriter(new FileWriter(output, false), ',');
-        outputWriter.write("NVars");
-        outputWriter.write("NUpperRun");
-        outputWriter.write("MeanFPA_time");
-        outputWriter.write("MeanMAV_time");
-        outputWriter.write("MeanCheck");
-        outputWriter.write("MeanFPA_total_points");
-        outputWriter.write("MeanMAV_total_points");
-        outputWriter.write("MeanFPA_total_nodes");
-        outputWriter.write("MeanMAV_total_nodes");
-        outputWriter.write("StdDevFPA_time");
-        outputWriter.write("StdDevMAV_time");
-        outputWriter.write("StdDevCheck");
-        outputWriter.write("StdFPA_total_points");
-        outputWriter.write("StdMAV_total_points");
-        outputWriter.write("StdFPA_total_nodes");
-        outputWriter.write("StdMAV_total_nodes");
-        outputWriter.write("MaxFPA_time");
-        outputWriter.write("MaxMAV_time");
-        outputWriter.write("MaxCheck");
-        outputWriter.write("MaxFPA_total_points");
-        outputWriter.write("MaxMAV_total_points");
-        outputWriter.write("MaxFPA_total_nodes");
-        outputWriter.write("MaxMAV_total_nodes");
-        outputWriter.write("MinFPA_time");
-        outputWriter.write("MinMAV_time");
-        outputWriter.write("MinCheck");
-        outputWriter.write("MinFPA_total_points");
-        outputWriter.write("MinMAV_total_points");
-        outputWriter.write("MinFPA_total_nodes");
-        outputWriter.write("MinMAV_total_nodes");
-        outputWriter.endRecord();
-        for(int h = 1; h < nvarsvariation+1; h++) {
-            for(int k = 0; k < nupperruns; k++) {
+        //double[][] stats = new double[statsnumber*nstat][nupperruns*nvarsvariation];
+        String output = outputfolder + File.separator+inputfile+"_"+"Stats.csv";
 
-                double[][] res = new double[nstat][nrun];
+        //for(int h = 1; h < nvarsvariation+1; h++) {
+            //for(int k = 0; k < nupperruns; k++) {
+
+                //double[][] res = new double[nstat][nrun];
 
 
-                String outputkh = outputfolder + File.separator+"SingleRun_"+k+"_"+(h*10)+".csv";
+                String outputkh = outputfolder + File.separator+"SingleRun_"+inputname+"_Results.csv";
                 CsvWriter outputWriterkh = new CsvWriter(new FileWriter(outputkh, false), ',');
                 outputWriterkh.write("FPA_time");
                 outputWriterkh.write("MAV_time");
@@ -95,63 +135,50 @@ public class main {
                 outputWriterkh.write("FPA_total_nodes");
                 outputWriterkh.write("MAV_total_nodes");
                 outputWriterkh.endRecord();
-
-                for (int i = 0; i < nrun; i++) {
-                    System.out.println("UpperRun: "+k+"  Variables: "+(h*10)+"  Iter:" + i);
-                    long[] ret = main.run(allbinaries, h*10, nstat, consider_matrix);
+                    //System.out.println("UpperRun: "+k+"  Variables: "+(h*10)+"  Iter:" + i);
+                    long[] ret = main.run(nstat,consider_matrix, type, inputfile);
                     for (int j = 0; j < nstat; j++) {
-                        //System.out.println("-> "+j+nstat);
-                        //System.out.println(ret[j]);
-                        res[j][i] = (double) ret[j];
                         outputWriterkh.write(ret[j]+"");
                     }
                     outputWriterkh.endRecord();
-                }
-
                 outputWriterkh.close();
-
-                outputWriter.write(h*10+"");
-                outputWriter.write(k+"");
-                for(int j = 0; j < statsnumber; j++){
-                    for(int s = 0; s < nstat ; s++){
-                        if (j == 0) {
-                            stats[j*nstat+s][(h-1)*nupperruns+k] = StatUtils.mean(res[s]);
-                            outputWriter.write(""+StatUtils.mean(res[s]));
-                        }
-                        if (j == 1) {
-                            stats[j*nstat+s][(h-1)*nupperruns+k] = Math.sqrt(StatUtils.variance(res[s]));
-                            outputWriter.write(""+Math.sqrt(StatUtils.variance(res[s])));
-                        }
-                        if (j == 2) {
-                            stats[j*nstat+s][(h-1)*nupperruns+k] = StatUtils.max(res[s]);
-                            outputWriter.write(""+StatUtils.max(res[s]));
-                        }
-                        if (j == 3) {
-                            stats[j*nstat+s][(h-1)*nupperruns+k] = StatUtils.min(res[s]);
-                            outputWriter.write(""+StatUtils.min(res[s]));
-                        }
-                    }
-                }
-                outputWriter.endRecord();
-            }
-        }
-        outputWriter.close();
     }
 
-    public static long[] run(boolean allbinaries, int nsize, int nstat, boolean consider_matrix){
+    public static long[] run( int nstat, boolean consider_matrix, String type, String inputfile){
         long [] ret = new long [nstat];
-        ArrayList<Object> param = main.RANDOMINSIDEABOX(allbinaries, nsize);
+        //ArrayList<Object> param = main.RANDOMINSIDEABOX(allbinaries, nsize);
 
-        double [][] objectives =  (double[][]) param.get(0);
-        double [][] matrixA = (double[][]) param.get(1);
-        double [] b = (double[]) param.get(2);
-        boolean [] binary = (boolean[]) param.get(3);
-        double [][][] matrixO = (double[][][]) param.get(4);
+        ArrayList<Object> param = new ArrayList<>();
+        try{
+            param = readFromFile(type, inputfile);
+        }catch( FileNotFoundException f){
+            f.printStackTrace();
+            return ret;
+        }
+
+        int n = (Integer) param.get(0);
+        double [][] objectives =  (double[][]) param.get(1);
+        double [][] matrixA = (double[][]) param.get(2);
+        double [] b = (double[]) param.get(3);
+        //double [][][] matrixO = (consider_matrix ? (double[][][]) param.get(5) : new double[n][n][n]);
+
+
+        boolean [] binary = new boolean[n];
+        int binaries = (Integer) param.get(4);
+        boolean allbinaries = false;
+
+        if( binaries < 0){
+            for( int i = 0; i < n; i++) binary[i] = true;
+            allbinaries = true;
+        }else{
+            for( int i = 0; i< binaries ; i++) binary[i] = true;
+        }
+
 
         try{
             CleverFrontierAlg alg = new CleverFrontierAlg(norm.Random_Weights);
             long init = System.currentTimeMillis();
-            List<Object> res = alg.solve(objectives,matrixO, matrixA, b, binary, consider_matrix);
+            List<Object> res = alg.solveLinear(objectives, matrixA, b, binary, consider_matrix);
             List<Map<String,Double>> Y = (List<Map<String,Double>>)res.get(0);
             long totnodes =(int) res.get(1);
             long end = System.currentTimeMillis();
@@ -172,7 +199,7 @@ public class main {
             if(allbinaries) {
                 MavrotasAlgorithm malg = new MavrotasAlgorithm();
                 start = System.currentTimeMillis();
-                List<Object> resM = malg.solve(objectives,matrixO,
+                List<Object> resM = malg.solveLinear(objectives,
                         matrixA, b, binary, consider_matrix);
                 List<Map<String, Double>> MY = ( List<Map<String, Double>>) resM.get(0);
                 long totnodesM = (int) resM.get(1);
@@ -194,13 +221,14 @@ public class main {
                     ret[6] =  totnodesM;
                 }
 
-            }
+            }else {
 
-            if( nstat >= 4){
-                ret[3] = Y.size();
-            }
-            if( nstat >= 6){
-                ret[5] =  totnodes;
+                if (nstat >= 4) {
+                    ret[3] = Y.size();
+                }
+                if (nstat >= 6) {
+                    ret[5] = totnodes;
+                }
             }
 
 

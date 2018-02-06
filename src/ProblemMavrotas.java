@@ -25,6 +25,12 @@ public class ProblemMavrotas {
         this.ID = ID;
         this.consider_matrix = consider_matrix;
     }
+    public ProblemMavrotas(long ID,double [][] objectives,
+                            double [][] matrixA, double[] b,boolean[] binary,boolean consider_matrix) throws IloException {
+        this.basicFilling(objectives, matrixA, b, binary);
+        this.ID = ID;
+        this.consider_matrix = consider_matrix;
+    }
 
     public ProblemMavrotas(long ID, ProblemMavrotas p,Map<String, IloAddable> newconstraints) throws IloException {
         this.ID = ID;
@@ -63,6 +69,19 @@ public class ProblemMavrotas {
         this.createConstraints(matrixA, b);
         this.objectives = new TreeMap<>();
         this.createObjectives(objectives, matrixO);
+        this.model = this.cplex.getModel();
+        this.localConstraints = new TreeMap<>();
+        this.level = 0;
+        this.n = objectives[0].length;
+    }
+    private void basicFilling(double [][] objectives,double [][] matrixA, double[] b, boolean[] binary) throws IloException{
+        this.cplex = new IloCplex();
+        this.vars  = new TreeMap<>();
+        this.createVariable(objectives[0].length, binary);
+        this.constraints = new TreeMap<>();
+        this.createConstraints(matrixA, b);
+        this.objectives = new TreeMap<>();
+        this.createObjectives(objectives);
         this.model = this.cplex.getModel();
         this.localConstraints = new TreeMap<>();
         this.level = 0;
@@ -147,6 +166,10 @@ public class ProblemMavrotas {
             }
 
         }
+    }
+
+    private void createObjectives(double [][] objectives) throws IloException{
+        createObjectives(objectives, new double[1][1][1]);
     }
 
     private boolean idealVectorFiller() throws IloException{

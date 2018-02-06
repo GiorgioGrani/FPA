@@ -38,6 +38,58 @@ public class CleverFrontierAlg {
         this.timemax = timemax;
     }
 
+    public List<Object> solveLinear(double [][] objectives,
+                              double [][] matrixA, double[] b, boolean[] binary, boolean consider_matrix) throws IloException{
+        return this.solveLinearWithoutTimeStop(objectives, matrixA, b, binary, consider_matrix);
+    }
+
+    public List<Object> solveLinearWithoutTimeStop(double [][] objectives,
+                                             double [][] matrixA, double[] b, boolean [] binary, boolean consider_matrix) throws IloException{
+        int nmodeint = 0;
+        if(this.nmode == norm.L1_norm){
+            nmodeint = 1;
+        }else if(this.nmode == norm.L2_norm){
+            nmodeint = 2;
+        }else if(this.nmode == norm.Random_Weights){
+            nmodeint = 3;
+        }
+        //initializzation
+        int ID = 0;
+        Problem root = new Problem(0, objectives, matrixA, b,binary, nmodeint, consider_matrix);
+        List<Problem> D = new ArrayList<>();
+        D.add(root);
+        List<Map<String, Double>> Y = new ArrayList<>();
+
+        //alg
+        while( D.size() > 0 ){
+            //if(ID%100 == 0) System.out.println(ID);
+            Problem p = D.get(D.size()-1); // todo this is only depthfirst
+            boolean isSolvable = p.solve();
+            if( isSolvable){
+                Map<String, IloAddable> pool = p.branchOn();
+                Y.add(p.getPareto());
+                D.remove(p);
+                for(String s: pool.keySet()){
+                    ID++;
+                    Problem pk = new Problem(ID,p,s,pool.get(s));
+                    D.add(pk);
+                }
+
+            }else{
+
+                D.remove(p);
+            }
+            p.refresh();
+
+        }
+
+        List<Object> ret = new ArrayList<>();
+        ret.add(0,Y);
+        ret.add(1,(ID));
+
+        return ret;
+    }
+
     public List<Object> solve(double [][] objectives, double[][][] matrixO,
                               double [][] matrixA, double[] b, boolean[] binary, boolean consider_matrix) throws IloException{
         return this.solveWithoutTimeStop(objectives,matrixO, matrixA, b, binary, consider_matrix);
@@ -63,23 +115,23 @@ public class CleverFrontierAlg {
         //alg
         while( D.size() > 0 ){
             //if(ID%100 == 0) System.out.println(ID);
-           Problem p = D.get(D.size()-1); // todo this is only depthfirst
-           boolean isSolvable = p.solve();
-           if( isSolvable){
-               Map<String, IloAddable> pool = p.branchOn();
-               Y.add(p.getPareto());
-               D.remove(p);
-               for(String s: pool.keySet()){
-                   ID++;
-                   Problem pk = new Problem(ID,p,s,pool.get(s));
-                   D.add(pk);
-               }
+            Problem p = D.get(D.size()-1); // todo this is only depthfirst
+            boolean isSolvable = p.solve();
+            if( isSolvable){
+                Map<String, IloAddable> pool = p.branchOn();
+                Y.add(p.getPareto());
+                D.remove(p);
+                for(String s: pool.keySet()){
+                    ID++;
+                    Problem pk = new Problem(ID,p,s,pool.get(s));
+                    D.add(pk);
+                }
 
-           }else{
+            }else{
 
-               D.remove(p);
-           }
-           p.refresh();
+                D.remove(p);
+            }
+            p.refresh();
 
         }
 

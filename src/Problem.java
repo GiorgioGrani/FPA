@@ -30,6 +30,13 @@ public class Problem {
         this.consider_matrix = consider_matrix;
     }
 
+    public Problem(long ID,double [][] objectives, double [][] matrixA, double[] b,boolean[] binary, int norm, boolean consider_matrix) throws IloException {
+        this.basicFilling(objectives,  matrixA, b, binary);
+        this.norm = norm;
+        this.ID = ID;
+        this.consider_matrix = consider_matrix;
+    }
+
     public Problem(long ID,double [][] objectives,double[][][] matrixO, double [][] matrixA, double[] b, boolean[] binary, boolean consider_matrix) throws IloException {
         this.basicFilling(objectives, matrixO, matrixA, b, binary);
         this.norm = 1;
@@ -78,11 +85,19 @@ public class Problem {
         this.model = this.cplex.getModel();
         this.localConstraints = new TreeMap<>();
         this.level = 0;
-
-
-
-
-
+    }
+    private void basicFilling(double [][] objectives, double [][] matrixA, double[] b, boolean[] binary) throws IloException{
+        this.cplex = new IloCplex();
+        this.vars  = new TreeMap<>();
+        this.createVariable(objectives[0].length, binary);
+        this.constraints = new TreeMap<>();
+        this.createConstraints(matrixA, b);
+        this.objectives = new TreeMap<>();
+        this.val = new TreeMap<>();
+        this.createObjectives(objectives);
+        this.model = this.cplex.getModel();
+        this.localConstraints = new TreeMap<>();
+        this.level = 0;
     }
 
     private void createVariable(int n, boolean[] binary) throws IloException{
@@ -114,7 +129,7 @@ public class Problem {
     private void createObjectives(double [][] objectives, double[][][] matrixO) throws IloException{
         for(int i = 0; i < objectives.length; i++){
             double minpos = 10e200;
-           // double maxneg = -1e200;
+            // double maxneg = -1e200;
             IloNumExpr expr = this.cplex.numExpr();
             //System.out.println();
             int j = 0;
@@ -167,6 +182,9 @@ public class Problem {
 
 
         }
+    }
+    private void createObjectives(double [][] objectives) throws IloException{
+        createObjectives(objectives, new double[1][1][1]);
     }
 
     private boolean setObjective() throws IloException{

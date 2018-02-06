@@ -11,6 +11,62 @@ import java.util.TreeMap;
 
 public class MavrotasAlgorithm {
 
+    public List<Object> solveLinear(double [][] objectives,
+                              double [][] matrixA, double[] b, boolean[] binary, boolean consider_matrix) throws IloException{
+        return this.solveLinearWithoutTimeStop(objectives, matrixA, b, binary, consider_matrix);
+    }
+
+    public List<Object> solveLinearWithoutTimeStop(double [][] objectives,
+                                             double [][] matrixA, double[] b, boolean [] binary, boolean consider_matrix) throws IloException{
+
+        //initializzation
+        int ID = 0;
+        ProblemMavrotas root = new ProblemMavrotas(0, objectives, matrixA, b,binary, consider_matrix);
+        List<ProblemMavrotas> D = new ArrayList<>();
+        D.add(root);
+        List<Map<String, Double>> Y = new ArrayList<>();
+
+        //alg
+        while( D.size() > 0 ){
+            //if(ID%100 == 0) System.out.println(ID);
+            ProblemMavrotas p = D.get(D.size()-1); // todo this is only depthfirst
+            boolean isSolvable = p.solve();
+            // System.out.println(" ID "+p.getID()+"  Is it solvable? "+isSolvable);
+            //MavrotasAlgorithm.printSingleCsv(p.getIdealvector());
+            if( isSolvable){
+                D.remove(p);
+                //System.out.println(Fathomed(Y,p.getIdealvector())+"   mavv");
+                if(!Fathomed(Y,p.getIdealvector())) {
+                    if(p.levelReach()) {
+                        //System.out.println("sono entrato");
+                        boolean val = MavrotasAlgorithm.clear(Y,p.getIdealvector());
+                        Y.add(p.getIdealvector());
+                        //MavrotasAlgorithm.printFrontier(Y);
+                    }else{
+                        Map<String, IloAddable> pool = p.branchOn();
+                        for (String s : pool.keySet()) {
+                            ID++;
+                            //System.out.println("ciao "+s);
+                            ProblemMavrotas pk = new ProblemMavrotas(ID, p, s, pool.get(s));
+                            D.add(pk);
+                        }
+                    }
+                }
+
+            }else{
+
+                D.remove(p);
+            }
+            p.refresh();
+
+        }
+
+        List<Object> ret = new ArrayList<>();
+        ret.add(0,Y);
+        ret.add(1,(ID));
+
+        return ret;
+    }
     public List<Object> solve(double [][] objectives, double[][][] matrixO,
                               double [][] matrixA, double[] b, boolean[] binary, boolean consider_matrix) throws IloException{
         return this.solveWithoutTimeStop(objectives, matrixO, matrixA, b, binary, consider_matrix);
@@ -18,7 +74,7 @@ public class MavrotasAlgorithm {
 
     public List<Object> solveWithoutTimeStop(double [][] objectives,double[][][] matrixO,
                                              double [][] matrixA, double[] b, boolean [] binary, boolean consider_matrix) throws IloException{
-        
+
         //initializzation
         int ID = 0;
         ProblemMavrotas root = new ProblemMavrotas(0, objectives, matrixO, matrixA, b,binary, consider_matrix);
@@ -31,7 +87,7 @@ public class MavrotasAlgorithm {
             //if(ID%100 == 0) System.out.println(ID);
             ProblemMavrotas p = D.get(D.size()-1); // todo this is only depthfirst
             boolean isSolvable = p.solve();
-           // System.out.println(" ID "+p.getID()+"  Is it solvable? "+isSolvable);
+            // System.out.println(" ID "+p.getID()+"  Is it solvable? "+isSolvable);
             //MavrotasAlgorithm.printSingleCsv(p.getIdealvector());
             if( isSolvable){
                 D.remove(p);
