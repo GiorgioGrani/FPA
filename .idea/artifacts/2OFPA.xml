@@ -1,0 +1,6 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="2OFPA">
+    <output-path>$PROJECT_DIR$/out/artifacts/2OFPA</output-path>
+    <root id="archive" name="2OFPA.jar" />
+  </artifact>
+</component>

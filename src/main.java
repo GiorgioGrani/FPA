@@ -11,6 +11,8 @@ import java.io.FileWriter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Scanner;
+import java.io.BufferedReader;
+import java.io.FileReader;
 
 public class main {
     public static double eps = 10e-8;
@@ -41,7 +43,7 @@ public class main {
         */
 
         try {
-            main.upperRuns(nstat, inputfile, type,inputname, outputfolder, consider_matrix);
+            main.upperRuns(nstat, type, inputfile,inputname, outputfolder, consider_matrix);
         }catch (IOException e){
             System.out.println("ERROR something is wrong with the Input/Output");
             e.printStackTrace();
@@ -49,57 +51,73 @@ public class main {
 
     }
 
-    private static ArrayList<Object> readFromFile( String type, String inputfile)throws FileNotFoundException{
+    private static ArrayList<Object> readFromFile( String type, String inputfile)throws FileNotFoundException,IOException{
         if( type.equalsIgnoreCase("2dkp")){
+            //System.out.println("iiiii");
             return read2DKP(inputfile);
         }else if (type.equalsIgnoreCase("ap")){
             return readAP(inputfile);
         }
+        //System.out.println(type);
        return readStandardInputFile( inputfile);
     }
 
-    private static ArrayList<Object> read(String inputfile) throws FileNotFoundException{
+    private static ArrayList<Object> read(String inputfile) throws FileNotFoundException, IOException{
         ArrayList<Object> parameters = new ArrayList<>();
-        Scanner fileIn = new Scanner(new File(inputfile)).useDelimiter("\\s* \\s*");;
-        do {
+        FileReader fr = new FileReader(inputfile);
+        BufferedReader br = new BufferedReader(fr);
+
+        String line = br.readLine();
+        while(line != null){
             ArrayList<Integer> singleinput = new ArrayList<>();
-            while (fileIn.hasNext()) {
+            Scanner fileIn = new Scanner(line);
+            while (fileIn.hasNextInt()) {
+                //System.out.print(fileIn.nextInt());
                 singleinput.add( fileIn.nextInt());
             }
+            fileIn.close();
             parameters.add(singleinput);
-        }while (fileIn.hasNextLine());
-        fileIn.close();
-
+            line = br.readLine();
+        }
+        br.close();
+        fr.close();
         return parameters;
     }
-    private static ArrayList<Object> read2DKP(String inputfile) throws FileNotFoundException{
+    private static ArrayList<Object> read2DKP(String inputfile) throws FileNotFoundException,IOException{
         ArrayList<Object> parameters = read(inputfile);
         int n = parameters.size();
         int binaryvariables = ((ArrayList<Integer>) parameters.get(0)).get(0);
-        int [] b = new int [2];
+        double [] b = new double [2];
         b[0] = ((ArrayList<Integer>) parameters.get(1)).get(0);
         b[1] = ((ArrayList<Integer>) parameters.get(2)).get(0);
         ArrayList<Integer> obj1 = (ArrayList<Integer>) parameters.get(3);
         ArrayList<Integer> obj2 = (ArrayList<Integer>) parameters.get(4);
         ArrayList<Integer> con1 = (ArrayList<Integer>) parameters.get(5);
         ArrayList<Integer> con2 = (ArrayList<Integer>) parameters.get(6);
-        int [][] c = new int [2][n];
-        int [][] A = new int [2][n];
-        for(int i = 0; i <n ; i++){
+        double [][] c = new double [2][binaryvariables];
+        double [][] A = new double [2][binaryvariables];
+        for(int i = 0; i <binaryvariables ; i++){
             c[0][i] = obj1.get(i);
             c[1][i] = obj2.get(i);
             A[0][i] = con1.get(i);
             A[1][i] = con2.get(i);
         }
 
-        parameters.add(n);
-        parameters.add(c);
-        parameters.add(A);
-        parameters.add(b);
-        parameters.add(-1); // allbinaries
+        ArrayList<Object> param = new ArrayList<>();
+
+        param.add(binaryvariables);
+        //System.out.println(binaryvariables);
+        param.add(c);
+        param.add(A);
+        param.add(b);
+        param.add(-1); // allbinaries
+
+        //System.out.println(b[0]);
+        //System.out.println(b[1]);
 
 
-        return parameters;
+
+        return param;
     }
 
     private static ArrayList<Object> readAP(String inputfile)throws FileNotFoundException{
@@ -151,8 +169,12 @@ public class main {
         ArrayList<Object> param = new ArrayList<>();
         try{
             param = readFromFile(type, inputfile);
+
         }catch( FileNotFoundException f){
             f.printStackTrace();
+            return ret;
+        }catch(IOException e){
+            e.printStackTrace();
             return ret;
         }
 

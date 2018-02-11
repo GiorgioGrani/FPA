@@ -120,7 +120,7 @@ public class Problem {
                 expr.addTerm(matrixA[i][j], this.vars.get(s));
                 j++;
             }
-            IloAddable con = this.cplex.addGe(expr, b[i]);
+            IloAddable con = this.cplex.addLe(expr, b[i]);
             String s = "con"+i;
             this.constraints.put(s, con);
         }
